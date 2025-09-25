@@ -3,6 +3,7 @@
 Claude Code Hub 是一个 Claude Code API 代理中转服务平台，专为需要统一管理多个 CC 服务提供商的团队和企业设计。通过智能负载均衡、用户权限管理和详细的使用统计，帮助您更高效、更安全地使用各种 CC 服务。
 
 ![统计](/public/readme/统计.webp)
+![供应商](/public/readme/供应商.webp)
 
 ## 🎯 核心功能
 
