@@ -1,275 +1,128 @@
 # Claude Code Hub
 
-> 一个现代化的 AI API 代理服务，提供智能负载均衡、用户管理和使用统计功能。
+Claude Code Hub 是一个 Claude Code API 代理中转服务平台，专为需要统一管理多个 CC 服务提供商的团队和企业设计。通过智能负载均衡、用户权限管理和详细的使用统计，帮助您更高效、更安全地使用各种 CC 服务。
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-15.4-black)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.1-blue)](https://reactjs.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-4.1-38bdf8)](https://tailwindcss.com/)
-[![pnpm](https://img.shields.io/badge/pnpm-9.15-ffbf00)](https://pnpm.io/)
+## 🎯 核心功能
 
-## ✨ 核心特性
+- **🔄 智能代理** - 统一的 API 接口，代理多个 CC 服务提供商
+- **⚖️ 负载均衡** - 智能分发请求，支持权重配置和故障转移
+- **👥 用户管理** - 多用户支持，细粒度权限和配额控制
+- **🔑 密钥管理** - 安全的 API 密钥生成和生命周期管理
+- **📊 使用统计** - 实时监控、成本分析和数据可视化
+- **🎨 现代界面** - 响应式管理面板，支持深色模式
 
-- 🔄 **智能代理** - 基于 Hono 的高性能 API 代理，支持流式响应 (SSE)
-- ⚖️ **负载均衡** - 智能分发请求到多个上游提供商，支持权重配置
-- 👥 **用户管理** - 多用户支持，细粒度的权限和配额控制
-- 🔑 **密钥管理** - 用户密钥生成、管理和权限控制
-- 📊 **使用统计** - 详细的请求统计、成本分析和可视化图表
-- 🎨 **现代界面** - 基于 shadcn/ui 的响应式管理面板
-- 💾 **数据持久化** - PostgreSQL + Drizzle ORM 的可靠数据存储
+## 🚀 快速部署
 
-## 🏗️ 技术栈
+### 推荐：Docker Compose 部署
 
-### 前端
-- **Next.js 15** - 使用 App Router 的全栈框架
-- **React 19** - 最新的 React 特性支持
-- **TypeScript** - 类型安全的开发体验
-- **Tailwind CSS v4** - 实用优先的 CSS 框架
-- **shadcn/ui** - 高质量的 React 组件库
+我们推荐使用 Docker Compose 进行一键部署，这种方式简单可靠，适合生产环境使用。
 
-### 后端
-- **Hono** - 轻量级、高性能的 Web 框架
-- **Drizzle ORM** - 类型安全的 SQL ORM
-- **PostgreSQL** - 生产级关系型数据库
-- **Node.js** - 稳定的 JavaScript 运行时
-
-## 🚀 快速开始
-
-### 环境要求
-
-- **pnpm** ≥ 9.15.0
-- **Node.js** ≥ 18
-- **PostgreSQL** ≥ 12
-
-### 安装与运行
-
-1. **克隆仓库**
+1. **克隆项目**
    ```bash
    git clone https://github.com/your-username/claude-code-hub.git
    cd claude-code-hub
    ```
 
-2. **安装依赖**
+2. **配置环境变量**
    ```bash
-   pnpm install
+   # 复制环境变量模板
+   cp .env.example .env
+
+   # 编辑环境变量文件
+   nano .env
    ```
 
-3. **配置环境变量**
-
-   复制环境变量模板：
+   主要配置项：
    ```bash
-   cp .env.example .env.local
+   # 管理员令牌（请设置一个强密码）
+   ADMIN_TOKEN=your-secure-admin-token-here
+
+   # 数据库配置（可选，使用默认值即可）
+   DB_USER=postgres
+   DB_PASSWORD=postgres
+   DB_NAME=claude_code_hub
    ```
 
-   编辑 `.env.local` 文件：
+3. **一键启动**
    ```bash
-   # 应用配置
-   NODE_ENV=development
-
-   # 管理员令牌
-   ADMIN_TOKEN=your-secure-admin-token
-
-   # 数据库连接
-   DATABASE_URL=postgres://user:password@localhost:5432/claude_code_hub
+   cd deploy
+   docker-compose up -d
    ```
 
-4. **初始化数据库**
-   ```bash
-   # 生成迁移文件
-   pnpm run db:generate
+4. **访问应用**
+   - 应用地址：http://localhost:23000
+   - 数据库端口：localhost:35432（如需直连）
 
-   # 执行数据库迁移
-   pnpm run db:migrate
-   ```
+### 其他部署方式
 
-5. **启动开发服务器**
-   ```bash
-   pnpm dev
-   ```
+如果您需要手动部署或开发环境，可参考以下步骤：
 
-   应用将在 http://localhost:13500 启动
+<details>
+<summary>手动部署指南</summary>
 
-### 生产部署
+**环境要求**
+- Node.js ≥ 18
+- PostgreSQL ≥ 12
+- pnpm ≥ 9.15.0
 
-1. **构建应用**
-   ```bash
-   pnpm run build
-   ```
+**步骤**
+1. 安装依赖：`pnpm install`
+2. 配置环境变量：复制 `.env.example` 到 `.env.local`
+3. 初始化数据库：`pnpm run db:migrate`
+4. 构建应用：`pnpm run build`
+5. 启动服务：`pnpm run start`
 
-2. **启动生产服务器**
-   ```bash
-   pnpm run start
-   ```
+</details>
 
-## 📁 项目结构
+## 📖 使用指南
 
-```
-src/
-├── app/                          # Next.js App Router
-│   ├── v1/[...route]/           # API 代理路由 (Hono)
-│   ├── dashboard/               # 管理面板页面
-│   ├── login/                   # 登录页面
-│   └── layout.tsx               # 根布局
-├── actions/                     # Server Actions
-│   ├── users.ts                 # 用户相关操作
-│   ├── keys.ts                  # 密钥管理
-│   ├── providers.ts             # 供应商管理
-│   └── statistics.ts            # 统计数据
-├── repository/                  # 数据访问层
-│   ├── user.ts                  # 用户数据访问
-│   ├── key.ts                   # 密钥数据访问
-│   ├── provider.ts              # 供应商数据访问
-│   └── message.ts               # 消息记录
-├── types/                       # TypeScript 类型定义
-│   ├── user.ts                  # 用户类型
-│   ├── key.ts                   # 密钥类型
-│   ├── provider.ts              # 供应商类型
-│   └── statistics.ts            # 统计类型
-├── components/                  # 共享 UI 组件 (shadcn/ui)
-├── lib/                         # 工具函数和配置
-│   ├── config/                  # 环境配置
-│   ├── constants/               # 常量定义
-│   ├── validation/              # 数据验证
-│   └── utils.ts                 # 通用工具
-└── drizzle/                     # 数据库 schema 和迁移
-```
+### 初始设置
 
-## 🎯 主要功能
+首次访问应用后，使用您在环境变量中设置的 `ADMIN_TOKEN` 登录管理后台。
 
-### 1. API 代理服务
+### 添加 AI 服务提供商
 
-智能代理 AI API 请求，支持：
-- 多上游提供商负载均衡
-- 基于权重的请求分发
-- 流式响应 (Server-Sent Events)
-- 请求认证和速率限制
-- 自动故障转移
+在"供应商管理"页面添加您的 AI 服务提供商：
+- 支持 OpenAI、Claude、Gemini 等主流服务
+- 配置 API 密钥和请求权重
+- 设置负载均衡策略
 
-### 2. 用户管理系统
+### 创建用户和密钥
 
-- **多用户支持** - 支持管理员和普通用户角色
-- **配额控制** - 每日消费限额和请求频率限制
-- **权限管理** - 细粒度的功能权限控制
+- 在"用户管理"创建新用户
+- 为用户生成 API 密钥
+- 设置使用配额和权限
 
-### 3. 密钥管理
+### 监控和管理
 
-- **密钥生成** - 自动生成安全的 API 密钥
-- **生命周期管理** - 支持密钥过期和禁用
-- **使用统计** - 实时监控密钥使用情况
+- 查看实时使用统计
+- 监控成本和性能
+- 管理用户配额和权限
 
-### 4. 供应商管理
+## 🛠️ 常见问题
 
-- **多供应商支持** - 管理多个 AI 服务提供商
-- **负载均衡配置** - 支持权重、速率限制等参数
-- **健康检查** - 自动检测和切换不可用的供应商
+<details>
+<summary>如何重置管理员密码？</summary>
 
-### 5. 数据分析
+修改 `.env` 文件中的 `ADMIN_TOKEN`，然后重启应用。
 
-- **实时统计** - 请求量、成本、响应时间等指标
-- **可视化图表** - 基于 Recharts 的交互式图表
-- **历史数据** - 支持不同时间范围的数据查看
+</details>
 
-## 🔧 开发命令
+<details>
+<summary>如何备份数据？</summary>
 
+数据存储在 PostgreSQL 中，您可以使用标准的数据库备份工具：
 ```bash
-# 开发
-pnpm dev                    # 启动开发服务器 (Turbopack)
-
-# 构建
-pnpm run build             # 构建生产版本
-pnpm run start                 # 启动生产服务器
-
-# 代码质量
-pnpm run lint              # ESLint 检查
-pnpm run typecheck         # TypeScript 类型检查
-
-# 数据库
-pnpm run db:generate       # 生成迁移文件
-pnpm run db:migrate        # 执行数据库迁移
-pnpm run db:push           # 推送 schema 到数据库
-pnpm run db:studio         # 启动 Drizzle Studio
+docker exec claude-code-hub-db pg_dump -U postgres claude_code_hub > backup.sql
 ```
 
-## 🎨 UI 组件
+</details>
 
-项目使用 [shadcn/ui](https://ui.shadcn.com/) 组件库，提供：
+<details>
+<summary>如何升级应用？</summary>
 
-- 一致的设计语言
-- 高度可定制的组件
-- 无障碍访问支持
-- 深色模式支持
+1. 拉取最新代码：`git pull`
+2. 重新构建：`docker-compose build --no-cache`
+3. 重启服务：`docker-compose up -d`
 
-### 添加新组件
-
-```bash
-pnpm dlx shadcn@latest add [component-name]
-```
-
-## 📊 数据库设计
-
-核心数据表：
-
-- **users** - 用户信息和配额设置
-- **keys** - API 密钥管理
-- **providers** - 上游服务提供商配置
-- **message_request** - 请求记录和统计
-- **model_prices** - 模型定价信息
-
-## 🔒 安全特性
-
-- **密钥加密存储** - 敏感信息加密保存
-- **请求认证** - 基于 JWT 的身份验证
-- **速率限制** - 防止 API 滥用
-- **权限控制** - 基于角色的访问控制
-- **输入验证** - 使用 Zod 进行严格的数据验证
-
-## 🚀 部署指南
-
-### Docker 部署
-
-```bash
-# 构建镜像
-docker build -t claude-code-hub .
-
-# 运行容器
-docker run -p 3000:3000 -e DATABASE_URL=your-db-url claude-code-hub
-```
-
-### 生产环境建议
-
-- 使用反向代理 (Nginx/Caddy)
-- 配置 HTTPS
-- 设置数据库连接池
-- 启用日志收集
-- 配置监控和告警
-
-## 🤝 贡献指南
-
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启 Pull Request
-
-### 代码规范
-
-- 使用 TypeScript 严格模式
-- 遵循 ESLint 规则
-- 提交前运行类型检查和 lint
-- 使用有意义的提交消息
-
-## 📝 许可证
-
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
-
-## 🆘 支持与反馈
-
-- 🐛 [报告问题](https://github.com/your-username/claude-code-hub/issues)
-- 💡 [功能建议](https://github.com/your-username/claude-code-hub/discussions)
-- 📧 邮件: your-email@example.com
-
----
-
-<p align="center">
-  用 ❤️ 构建，为 AI 应用开发者服务
-</p>
+</details>
