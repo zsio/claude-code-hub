@@ -1,0 +1,54 @@
+version: '3.9'
+
+services:
+  # PostgreSQL 数据库服务
+  postgres:
+    image: postgres:16-alpine
+    container_name: claude-code-hub-db
+    restart: unless-stopped
+    ports:
+      - "35432:5432"  # 映射到主机端口，避免冲突
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-claude_code_hub}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-claude_code_hub}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - app-network
+
+  # 主应用服务（包含自动迁移）
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: claude-code-hub-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "23000:23000"
+    env_file:
+      - ../.env
+    environment:
+      NODE_ENV: production
+      PORT: 23000
+      # 使用容器网络连接数据库
+      DSN: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-claude_code_hub}
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
