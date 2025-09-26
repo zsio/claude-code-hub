@@ -40,7 +40,7 @@ Claude Code Hub 是一个 Claude Code API 代理中转服务平台，专为需�
    # 管理员令牌（请设置一个强密码）
    ADMIN_TOKEN=your-secure-admin-token-here
 
-   # 数据库配置（可选，使用默认值即可）
+   # 数据库配置（重要，请修改）
    DB_USER=postgres
    DB_PASSWORD=postgres
    DB_NAME=claude_code_hub
