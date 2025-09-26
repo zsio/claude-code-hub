@@ -1,0 +1,79 @@
+name: PR Build Check
+
+# 仅在 PR 提交或更新时触发
+on:
+  pull_request:
+    branches:
+      - dev  # PR 目标是 dev 分支
+      - main # 也可以直接向 main 提交 PR
+    types: [opened, synchronize, reopened]
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: zsio/claude-code-hub
+
+jobs:
+  # PR 构建测试任务（不推送镜像）
+  build-check:
+    runs-on: ubuntu-latest
+    name: Docker Build Test
+
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+
+    - name: 🔧 Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: 📋 Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=pr
+          type=sha,prefix=pr-
+
+    - name: 🏗️ Build Docker image (Test Only - No Push)
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./deploy/Dockerfile
+        platforms: linux/amd64,linux/arm64
+        push: false  # 永远不推送，仅测试构建
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        # 输出类型为 docker，用于后续测试
+        outputs: type=docker,dest=/tmp/image.tar
+
+    - name: 🔍 Test Docker image structure
+      run: |
+        # 加载构建的镜像
+        docker load --input /tmp/image.tar
+
+        # 基础检查：确保镜像存在并可以运行
+        IMAGE_TAG="${{ fromJSON(steps.meta.outputs.json).tags[0] }}"
+        echo "Testing image: $IMAGE_TAG"
+
+        # 检查镜像大小
+        docker images $IMAGE_TAG
+
+        # 尝试运行镜像的健康检查（dry run）
+        docker run --rm $IMAGE_TAG node --version
+        docker run --rm $IMAGE_TAG pnpm --version
+
+    - name: ✅ Build check passed
+      run: |
+        echo "✅ Docker image build successful!"
+        echo "📦 Image tags that would be used: ${{ steps.meta.outputs.tags }}"
+        echo "🔍 All checks passed - PR is ready for review"
+
+    # 如果构建失败，这个步骤会提供更详细的信息
+    - name: ❌ Build failed diagnostics
+      if: failure()
+      run: |
+        echo "❌ Build or test failed!"
+        echo "Please check the logs above for details."
+        docker images

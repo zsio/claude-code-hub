@@ -16,49 +16,92 @@ Claude Code Hub 是一个 Claude Code API 代理中转服务平台，专为需�
 
 ## 🚀 快速部署
 
-### 推荐：Docker Compose 部署
+### 推荐：官方 Docker 镜像 + Compose
 
-我们推荐使用 Docker Compose 进行一键部署，这种方式简单可靠，适合生产环境使用。
+生产环境建议直接使用已经发布到 Docker Hub 的镜像 `zsio/claude-code-hub:latest`，无需进行本地构建。
 
-1. **克隆项目**
-
-   ```bash
-   git clone https://github.com/your-username/claude-code-hub.git
-   cd claude-code-hub
-   ```
-
-2. **配置环境变量**
+1. **准备环境变量**
 
    ```bash
-   # 复制环境变量模板
-   cp .env.example .env
+   # 获取示例并保存为部署时使用的 .env
+   curl -fsSL https://raw.githubusercontent.com/zsio/claude-code-hub/main/.env.example -o .env
 
-   # 编辑环境变量文件
+   # 根据需求修改 .env（可使用任意编辑器）
    nano .env
    ```
 
-   主要配置项：
+   关键配置示例：
 
    ```bash
-   # 管理员令牌（请设置一个强密码）
-   ADMIN_TOKEN=your-secure-admin-token-here
+   # 管理员令牌（请设置强密码）
+   ADMIN_TOKEN=your-secure-admin-token
 
-   # 数据库配置（重要，请修改）
+   # PostgreSQL 连接信息
    DB_USER=postgres
    DB_PASSWORD=postgres
    DB_NAME=claude_code_hub
    ```
 
-3. **一键启动**
+2. **创建 docker-compose.yaml**
+
+   将下方示例保存到 `.env` 同级目录；如需自定义端口或数据库，请自行调整。
+
+   <details>
+   <summary>docker-compose.yaml 示例</summary>
+
+   ```yaml
+   services:
+     postgres:
+       image: postgres:16-alpine
+       container_name: claude-code-hub-db
+       restart: unless-stopped
+       ports:
+         - "35432:5432"
+       environment:
+         POSTGRES_USER: ${DB_USER:-postgres}
+         POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+         POSTGRES_DB: ${DB_NAME:-claude_code_hub}
+       volumes:
+         - postgres_data:/var/lib/postgresql/data
+       healthcheck:
+         test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-claude_code_hub}"]
+         interval: 5s
+         timeout: 5s
+         retries: 10
+         start_period: 10s
+
+     app:
+       image: zsio/claude-code-hub:latest
+       container_name: claude-code-hub-app
+       depends_on:
+         postgres:
+           condition: service_healthy
+       env_file:
+         - ./.env
+       environment:
+         NODE_ENV: production
+         PORT: 23000
+         DSN: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-claude_code_hub}
+       ports:
+         - "23000:23000"
+       restart: unless-stopped
+
+   volumes:
+     postgres_data:
+       driver: local
+   ```
+
+   </details>
+
+3. **启动服务**
 
    ```bash
-   cd deploy
-   docker-compose up -d
+   docker compose up -d
    ```
 
 4. **访问应用**
-   - 应用地址：<http://localhost:23000>
-   - 数据库端口：localhost:35432（如需直连）
+   - Web 管理后台：<http://localhost:23000>
+   - PostgreSQL：localhost:35432（需要直连时使用）
 
 ### 其他部署方式
 
@@ -132,8 +175,7 @@ docker exec claude-code-hub-db pg_dump -U postgres claude_code_hub > backup.sql
 <details>
 <summary>如何升级应用？</summary>
 
-1. 拉取最新代码：`git pull`
-2. 重新构建：`docker-compose build --no-cache`
-3. 重启服务：`docker-compose up -d`
+1. 拉取最新镜像：`docker compose pull`
+2. 重启服务：`docker compose up -d`
 
 </details>
