@@ -21,12 +21,14 @@ Claude Code Hub 是一个 Claude Code API 代理中转服务平台，专为需�
 我们推荐使用 Docker Compose 进行一键部署，这种方式简单可靠，适合生产环境使用。
 
 1. **克隆项目**
+
    ```bash
    git clone https://github.com/your-username/claude-code-hub.git
    cd claude-code-hub
    ```
 
 2. **配置环境变量**
+
    ```bash
    # 复制环境变量模板
    cp .env.example .env
@@ -36,24 +38,26 @@ Claude Code Hub 是一个 Claude Code API 代理中转服务平台，专为需�
    ```
 
    主要配置项：
+
    ```bash
    # 管理员令牌（请设置一个强密码）
    ADMIN_TOKEN=your-secure-admin-token-here
 
-   # 数据库配置（可选，使用默认值即可）
+   # 数据库配置（重要，请修改）
    DB_USER=postgres
    DB_PASSWORD=postgres
    DB_NAME=claude_code_hub
    ```
 
 3. **一键启动**
+
    ```bash
    cd deploy
    docker-compose up -d
    ```
 
 4. **访问应用**
-   - 应用地址：http://localhost:23000
+   - 应用地址：<http://localhost:23000>
    - 数据库端口：localhost:35432（如需直连）
 
 ### 其他部署方式
@@ -64,11 +68,13 @@ Claude Code Hub 是一个 Claude Code API 代理中转服务平台，专为需�
 <summary>手动部署指南</summary>
 
 **环境要求**
+
 - Node.js ≥ 18
 - PostgreSQL ≥ 12
 - pnpm ≥ 9.15.0
 
 **步骤**
+
 1. 安装依赖：`pnpm install`
 2. 配置环境变量：复制 `.env.example` 到 `.env.local`
 3. 初始化数据库：`pnpm run db:migrate`
@@ -86,6 +92,7 @@ Claude Code Hub 是一个 Claude Code API 代理中转服务平台，专为需�
 ### 添加 AI 服务提供商
 
 在"供应商管理"页面添加您的 AI 服务提供商：
+
 - 支持 OpenAI、Claude、Gemini 等主流服务
 - 配置 API 密钥和请求权重
 - 设置负载均衡策略
@@ -115,6 +122,7 @@ Claude Code Hub 是一个 Claude Code API 代理中转服务平台，专为需�
 <summary>如何备份数据？</summary>
 
 数据存储在 PostgreSQL 中，您可以使用标准的数据库备份工具：
+
 ```bash
 docker exec claude-code-hub-db pg_dump -U postgres claude_code_hub > backup.sql
 ```
