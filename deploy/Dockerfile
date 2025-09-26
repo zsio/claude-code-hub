@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM --platform=$BUILDPLATFORM docker.m.daocloud.io/library/node:22-slim AS build-base
+FROM --platform=$BUILDPLATFORM node:22-slim AS build-base
 ENV PNPM_HOME=/pnpm
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
@@ -15,7 +15,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm run build
 
-FROM docker.m.daocloud.io/library/node:22-slim AS runner
+FROM node:22-slim AS runner
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0
