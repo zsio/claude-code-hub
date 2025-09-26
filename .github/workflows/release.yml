@@ -1,0 +1,168 @@
+name: Release Docker Image
+
+# 支持标签发布和测试分支推送
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'  # 匹配 x.x.x 格式的版本标签
+      - 'v[0-9]+.[0-9]+.[0-9]+' # 匹配 vx.x.x 格式的版本标签
+    branches:
+      - feature/actions  # 测试分支，推送时自动构建
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: zsio/claude-code-hub
+
+jobs:
+  # 验证标签是否在 main 分支上（仅标签触发时运行）
+  verify-branch:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    outputs:
+      is_main: ${{ steps.check.outputs.is_main }}
+
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # 获取所有历史记录以检查分支
+
+    - name: 🔍 Check if tag is on main branch
+      id: check
+      run: |
+        # 获取包含此标签的分支
+        BRANCHES=$(git branch -r --contains ${{ github.ref_name }} | grep -E '^\s*origin/main$' || true)
+
+        if [ -n "$BRANCHES" ]; then
+          echo "✅ Tag ${{ github.ref_name }} is on main branch"
+          echo "is_main=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Tag ${{ github.ref_name }} is NOT on main branch"
+          echo "is_main=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+
+  # 构建并推送 Docker 镜像
+  build-and-push:
+    # 标签需要通过验证，分支推送直接运行
+    needs: [verify-branch]
+    if: |
+      always() &&
+      (needs.verify-branch.outputs.is_main == 'true' ||
+       github.ref == 'refs/heads/feature/actions')
+    runs-on: ubuntu-latest
+    name: Build and Push to DockerHub
+
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+
+    - name: 🔧 Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: 🔧 Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: 🔐 Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: 📋 Extract metadata (for tags)
+      if: startsWith(github.ref, 'refs/tags/')
+      id: meta-tag
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        # 标签策略
+        tags: |
+          # 语义化版本
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          # latest 标签（当推送语义化版本标签时）
+          type=raw,value=latest
+        # 标签风格：去除 v 前缀
+        flavor: |
+          latest=false
+          prefix=
+          suffix=
+
+    - name: 📋 Extract metadata (for feature/actions branch)
+      if: github.ref == 'refs/heads/feature/actions'
+      id: meta-branch
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        # 测试分支标签策略：使用短 SHA
+        tags: |
+          type=sha,prefix=test-
+          type=raw,value=feature-actions
+        # 不使用 latest 标签
+        flavor: |
+          latest=false
+
+    - name: 🏗️ Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./deploy/Dockerfile
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta-tag.outputs.tags }}${{ steps.meta-branch.outputs.tags }}
+        labels: ${{ steps.meta-tag.outputs.labels }}${{ steps.meta-branch.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        # 添加构建参数
+        build-args: |
+          VERSION=${{ github.ref_name }}
+          BUILD_DATE=${{ github.event.head_commit.timestamp }}
+          VCS_REF=${{ github.sha }}
+
+    - name: 📦 Image pushed successfully
+      run: |
+        echo "✅ Docker image pushed to DockerHub successfully!"
+        echo "📋 Image digest: ${{ steps.build.outputs.digest }}"
+        echo "🏷️ Image tags:"
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          echo "${{ steps.meta-tag.outputs.tags }}"
+          echo ""
+          echo "📝 Pull commands:"
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}"
+        else
+          echo "${{ steps.meta-branch.outputs.tags }}"
+          echo ""
+          echo "📝 Pull commands:"
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-$(echo ${{ github.sha }} | cut -c1-7)"
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:feature-actions"
+        fi
+
+    - name: 🎉 Create Release Notes
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: Release ${{ github.ref_name }}
+        body: |
+          ## 🚀 Docker Image Released
+
+          **Version:** ${{ github.ref_name }}
+          **Image:** `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}`
+
+          ### 📦 Available Tags
+          - `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}`
+          - `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest`
+
+          ### 🐳 Pull Command
+          ```bash
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          ```
+
+          ### 📝 Changelog
+          View commits: https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}
+        draft: false
+        prerelease: false
