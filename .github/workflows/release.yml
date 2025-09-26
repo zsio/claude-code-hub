@@ -1,13 +1,11 @@
 name: Release Docker Image
 
-# 支持标签发布和测试分支推送
+# 支持标签发布
 on:
   push:
     tags:
       - '[0-9]+.[0-9]+.[0-9]+'  # 匹配 x.x.x 格式的版本标签
       - 'v[0-9]+.[0-9]+.[0-9]+' # 匹配 vx.x.x 格式的版本标签
-    branches:
-      - feature/actions  # 测试分支，推送时自动构建
 
 env:
   REGISTRY: docker.io
@@ -44,12 +42,9 @@ jobs:
 
   # 构建并推送 Docker 镜像
   build-and-push:
-    # 标签需要通过验证，分支推送直接运行
+    # 仅当标签验证通过时执行
     needs: [verify-branch]
-    if: |
-      always() &&
-      (needs.verify-branch.outputs.is_main == 'true' ||
-       github.ref == 'refs/heads/feature/actions')
+    if: needs.verify-branch.outputs.is_main == 'true'
     runs-on: ubuntu-latest
     name: Build and Push to DockerHub
 
@@ -70,8 +65,7 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: 📋 Extract metadata (for tags)
-      if: startsWith(github.ref, 'refs/tags/')
+    - name: 📋 Extract metadata
       id: meta-tag
       uses: docker/metadata-action@v5
       with:
@@ -90,20 +84,6 @@ jobs:
           prefix=
           suffix=
 
-    - name: 📋 Extract metadata (for feature/actions branch)
-      if: github.ref == 'refs/heads/feature/actions'
-      id: meta-branch
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        # 测试分支标签策略：使用短 SHA
-        tags: |
-          type=sha,prefix=test-
-          type=raw,value=feature-actions
-        # 不使用 latest 标签
-        flavor: |
-          latest=false
-
     - name: 🏗️ Build and push Docker image
       id: build
       uses: docker/build-push-action@v5
@@ -112,8 +92,8 @@ jobs:
         file: ./deploy/Dockerfile
         platforms: linux/amd64,linux/arm64
         push: true
-        tags: ${{ steps.meta-tag.outputs.tags }}${{ steps.meta-branch.outputs.tags }}
-        labels: ${{ steps.meta-tag.outputs.labels }}${{ steps.meta-branch.outputs.labels }}
+        tags: ${{ steps.meta-tag.outputs.tags }}
+        labels: ${{ steps.meta-tag.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
         # 添加构建参数
@@ -127,19 +107,11 @@ jobs:
         echo "✅ Docker image pushed to DockerHub successfully!"
         echo "📋 Image digest: ${{ steps.build.outputs.digest }}"
         echo "🏷️ Image tags:"
-        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-          echo "${{ steps.meta-tag.outputs.tags }}"
-          echo ""
-          echo "📝 Pull commands:"
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}"
-        else
-          echo "${{ steps.meta-branch.outputs.tags }}"
-          echo ""
-          echo "📝 Pull commands:"
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-$(echo ${{ github.sha }} | cut -c1-7)"
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:feature-actions"
-        fi
+        echo "${{ steps.meta-tag.outputs.tags }}"
+        echo ""
+        echo "📝 Pull commands:"
+        echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+        echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}"
 
     - name: 🎉 Create Release Notes
       if: startsWith(github.ref, 'refs/tags/')
