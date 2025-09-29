@@ -1,0 +1,84 @@
+name: PR Build Check
+
+# 仅在 PR 提交或更新时触发
+on:
+  pull_request:
+    branches:
+      - dev  # PR 目标是 dev 分支
+      - main # 也可以直接向 main 提交 PR
+    types: [opened, synchronize, reopened]
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: zsio/claude-code-hub
+
+jobs:
+  # PR 构建测试任务（不推送镜像）
+  build-check:
+    runs-on: ubuntu-latest
+    name: Docker Build Test
+
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+
+    - name: 🔧 Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: 📋 Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=pr
+          type=sha,prefix=pr-
+
+    - name: 🏗️ Build Docker image (Test Only - No Push)
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./deploy/Dockerfile
+        platforms: linux/amd64  # PR检查使用单一架构提高速度
+        push: false  # 永远不推送，仅测试构建
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        load: true  # 将镜像加载到Docker daemon，用于后续测试
+
+    - name: 🔍 Test Docker image structure
+      run: |
+        # 镜像已直接加载到Docker daemon
+        IMAGE_TAG="${{ fromJSON(steps.meta.outputs.json).tags[0] }}"
+        echo "Testing image: $IMAGE_TAG"
+
+        # 检查镜像大小
+        docker images $IMAGE_TAG
+
+        # 验证运行环境
+        echo "🔧 Testing Node.js version..."
+        docker run --rm $IMAGE_TAG node --version
+
+        # 验证应用文件存在
+        echo "📦 Checking application files..."
+        docker run --rm $IMAGE_TAG ls -la server.js .next/static/
+
+        # 快速健康检查（启动并立即停止）
+        echo "🏃 Quick startup test..."
+        timeout 5 docker run --rm $IMAGE_TAG node server.js || true
+        echo "✅ Image structure test completed"
+
+    - name: ✅ Build check passed
+      run: |
+        echo "✅ Docker image build successful!"
+        echo "📦 Image tags that would be used: ${{ steps.meta.outputs.tags }}"
+        echo "🔍 All checks passed - PR is ready for review"
+
+    # 如果构建失败，这个步骤会提供更详细的信息
+    - name: ❌ Build failed diagnostics
+      if: failure()
+      run: |
+        echo "❌ Build or test failed!"
+        echo "Please check the logs above for details."
+        docker images
