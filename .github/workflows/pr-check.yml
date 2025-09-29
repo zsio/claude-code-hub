@@ -1,11 +1,10 @@
 name: PR Build Check
 
-# 仅在 PR 提交或更新时触发
+# 仅在向 main 分支提交 PR 时触发
 on:
   pull_request:
     branches:
-      - dev  # PR 目标是 dev 分支
-      - main # 也可以直接向 main 提交 PR
+      - main  # 所有 PR 都合并到 main 分支
     types: [opened, synchronize, reopened]
 
 env:
