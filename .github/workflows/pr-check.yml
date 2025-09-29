@@ -1,0 +1,60 @@
+name: PR Build Check
+
+# 仅在向 main 分支提交 PR 时触发
+on:
+  pull_request:
+    branches:
+      - main  # 所有 PR 都合并到 main 分支
+    types: [opened, synchronize, reopened]
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: zsio/claude-code-hub
+
+jobs:
+  # PR 构建测试任务（不推送镜像）
+  build-check:
+    runs-on: ubuntu-latest
+    name: Docker Build Test
+
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+
+    - name: 🔧 Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: 📋 Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=pr
+          type=sha,prefix=pr-
+
+    - name: 🏗️ Build Docker image (Test Only - No Push)
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./deploy/Dockerfile
+        platforms: linux/amd64  # PR检查使用单一架构提高速度
+        push: false  # 永远不推送，仅测试构建
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: ✅ Build check passed
+      run: |
+        echo "✅ Docker image build successful!"
+        echo "📦 Image tags that would be used: ${{ steps.meta.outputs.tags }}"
+        echo "🔍 All checks passed - PR is ready for review"
+
+    # 如果构建失败，这个步骤会提供更详细的信息
+    - name: ❌ Build failed diagnostics
+      if: failure()
+      run: |
+        echo "❌ Build or test failed!"
+        echo "Please check the logs above for details."
+        docker images
