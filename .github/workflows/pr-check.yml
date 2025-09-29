@@ -39,21 +39,17 @@ jobs:
       with:
         context: .
         file: ./deploy/Dockerfile
-        platforms: linux/amd64,linux/arm64
+        platforms: linux/amd64  # PR检查使用单一架构提高速度
         push: false  # 永远不推送，仅测试构建
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
-        # 输出类型为 docker，用于后续测试
-        outputs: type=docker,dest=/tmp/image.tar
+        load: true  # 将镜像加载到Docker daemon，用于后续测试
 
     - name: 🔍 Test Docker image structure
       run: |
-        # 加载构建的镜像
-        docker load --input /tmp/image.tar
-
-        # 基础检查：确保镜像存在并可以运行
+        # 镜像已直接加载到Docker daemon
         IMAGE_TAG="${{ fromJSON(steps.meta.outputs.json).tags[0] }}"
         echo "Testing image: $IMAGE_TAG"
 
