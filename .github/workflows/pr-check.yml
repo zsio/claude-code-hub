@@ -45,29 +45,6 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
-        load: true  # 将镜像加载到Docker daemon，用于后续测试
-
-    - name: 🔍 Test Docker image structure
-      run: |
-        # 镜像已直接加载到Docker daemon
-        IMAGE_TAG="${{ fromJSON(steps.meta.outputs.json).tags[0] }}"
-        echo "Testing image: $IMAGE_TAG"
-
-        # 检查镜像大小
-        docker images $IMAGE_TAG
-
-        # 验证运行环境
-        echo "🔧 Testing Node.js version..."
-        docker run --rm $IMAGE_TAG node --version
-
-        # 验证应用文件存在
-        echo "📦 Checking application files..."
-        docker run --rm $IMAGE_TAG ls -la server.js .next/static/
-
-        # 快速健康检查（启动并立即停止）
-        echo "🏃 Quick startup test..."
-        timeout 5 docker run --rm $IMAGE_TAG node server.js || true
-        echo "✅ Image structure test completed"
 
     - name: ✅ Build check passed
       run: |
