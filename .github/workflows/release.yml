@@ -11,6 +11,9 @@ env:
   REGISTRY: docker.io
   IMAGE_NAME: zsio/claude-code-hub
 
+permissions:
+  contents: write  # 需要写入权限来创建release
+
 jobs:
   # 验证标签是否在 main 分支上（仅标签触发时运行）
   verify-branch:
@@ -112,29 +115,3 @@ jobs:
         echo "📝 Pull commands:"
         echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
         echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}"
-
-    - name: 🎉 Create Release Notes
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ github.ref_name }}
-        name: Release ${{ github.ref_name }}
-        body: |
-          ## 🚀 Docker Image Released
-
-          **Version:** ${{ github.ref_name }}
-          **Image:** `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}`
-
-          ### 📦 Available Tags
-          - `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}`
-          - `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest`
-
-          ### 🐳 Pull Command
-          ```bash
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          ```
-
-          ### 📝 Changelog
-          View commits: https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}
-        draft: false
-        prerelease: false
