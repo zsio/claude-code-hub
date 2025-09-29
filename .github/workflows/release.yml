@@ -4,8 +4,8 @@ name: Release Docker Image
 on:
   push:
     tags:
-      - '[0-9]+.[0-9]+.[0-9]+'  # 匹配 x.x.x 格式的版本标签
-      - 'v[0-9]+.[0-9]+.[0-9]+' # 匹配 vx.x.x 格式的版本标签
+      - '[0-9]+\.[0-9]+\.[0-9]+'  # 匹配 x.x.x 格式的版本标签（精确匹配点号）
+      - 'v[0-9]+\.[0-9]+\.[0-9]+' # 匹配 vx.x.x 格式的版本标签（精确匹配点号）
 
 env:
   REGISTRY: docker.io
@@ -80,12 +80,12 @@ jobs:
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
           type=semver,pattern={{major}}
-          # latest 标签（当推送语义化版本标签时）
+          # 手动控制 latest 标签（当推送语义化版本标签时）
           type=raw,value=latest
-        # 标签风格：去除 v 前缀
+        # 标签风格配置
         flavor: |
-          latest=false
-          prefix=
+          latest=false  # 禁用自动 latest（我们手动控制）
+          prefix=       # 去除 v 前缀
           suffix=
 
     - name: 🏗️ Build and push Docker image
@@ -101,11 +101,6 @@ jobs:
         labels: ${{ steps.meta-tag.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
-        # 添加构建参数
-        build-args: |
-          VERSION=${{ github.ref_name }}
-          BUILD_DATE=${{ github.event.head_commit.timestamp }}
-          VCS_REF=${{ github.sha }}
 
     - name: 📦 Image pushed successfully
       run: |
