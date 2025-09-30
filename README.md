@@ -198,11 +198,7 @@ docker compose down -v
 
 > **📌 重要说明：API 格式兼容性**
 >
-> 本服务**仅支持 Claude Code 格式**的 API 接口。如果您需要使用其他格式的 AI 服务（如智谱 GLM、Kimi、Packy 等），请先使用 `claude-code-router` 进行格式转换，然后将转换后的服务地址添加到本系统。
->
-> **支持的接入方式**：
-> - ✅ 直接支持：原生 Claude Code 格式的服务
-> - ✅ 通过 Router 支持：智谱 GLM、Kimi、Packy、通义千问、文心一言等（需先部署 `claude-code-router` 进行协议转换）
+> 本服务**仅支持 Claude Code 格式**的 API 接口（如智谱 GLM、Kimi、Packy 等）。如果您需要使用其他格式的 AI 服务，比如 Gemini、OpenAI、 Ollama 等格式，请先使用 `claude-code-router` 进行格式转换，然后将转换后的服务地址添加到本系统。
 
 ### 3️⃣ 创建用户和密钥
 
