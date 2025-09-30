@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "claude-code-hub-db": {
+    "db": {
       "type": "stdio",
       "command": "npx",
       "args": ["@bytebase/dbhub"],
