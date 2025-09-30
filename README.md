@@ -184,18 +184,6 @@ docker compose down -v
 
 进入 **设置 → 供应商管理**，点击"添加供应商"：
 
-| 配置项 | 说明 | 示例 |
-|--------|------|------|
-| 名称 | 供应商标识名称 | `OpenAI-US-1` |
-| 描述 | 备注信息 | `OpenAI 美国节点` |
-| URL | API Endpoint | `https://api.openai.com` |
-| API Key | 上游服务密钥 | `sk-proj-xxx...` |
-| 权重 | 负载均衡权重（1-100） | `10`（权重越高，分配请求越多） |
-| TPM | 每分钟 Token 限制 | `1000000` |
-| RPM | 每分钟请求限制 | `3500` |
-| RPD | 每天请求限制 | `10000` |
-| 并发数 | 最大并发连接数 | `100` |
-
 > **📌 重要说明：API 格式兼容性**
 >
 > 本服务**仅支持 Claude Code 格式**的 API 接口（如智谱 GLM、Kimi、Packy 等）。如果您需要使用其他格式的 AI 服务，比如 Gemini、OpenAI、 Ollama 等格式，请先使用 `claude-code-router` 进行格式转换，然后将转换后的服务地址添加到本系统。
