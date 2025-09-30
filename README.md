@@ -178,7 +178,8 @@ docker compose down -v
 
 ### 1️⃣ 初始设置
 
-首次访问 http://localhost:23000，使用 `ADMIN_TOKEN` 登录管理后台。
+首次访问 http://localhost:23000
+使用 `ADMIN_TOKEN` 登录管理后台。
 
 ### 2️⃣ 添加 AI 服务提供商
 
@@ -208,21 +209,8 @@ docker compose down -v
 ### 4️⃣ 使用代理 API
 
 用户使用生成的密钥调用服务：
+查看 `http://localhost:23000/usage-doc`
 
-```bash
-curl http://localhost:23000/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer sk-xxxxx" \
-  -d '{
-    "model": "claude-sonnet-4-5",
-    "messages": [
-      {"role": "user", "content": "Hello, how are you?"}
-    ],
-    "stream": true
-  }'
-```
-
-**兼容性**：完全兼容 OpenAI API 格式，可直接替换现有应用中的 API Base URL。
 
 ### 5️⃣ 监控和统计
 
