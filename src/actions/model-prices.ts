@@ -53,8 +53,9 @@ export async function uploadPriceTable(
       return { ok: false, error: "价格表必须是一个JSON对象" };
     }
 
+    // 获取所有模型条目，不再过滤特定供应商
     const entries = Object.entries(priceTable).filter(([modelName]) =>
-      typeof modelName === "string" && modelName.toLowerCase().startsWith("claude-")
+      typeof modelName === "string" && modelName.trim().length > 0
     );
 
     const result: PriceUpdateResult = {
@@ -108,7 +109,7 @@ export async function uploadPriceTable(
 }
 
 /**
- * 获取所有模型的最新价格，仅包含 claude 系列
+ * 获取所有模型的最新价格
  */
 export async function getModelPrices(): Promise<ModelPrice[]> {
   try {

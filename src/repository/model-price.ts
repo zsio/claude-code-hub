@@ -38,7 +38,6 @@ export async function findAllLatestPrices(): Promise<ModelPrice[]> {
         model_name,
         MAX(created_at) as max_created_at
       FROM model_prices
-      WHERE model_name ILIKE 'claude-%'
       GROUP BY model_name
     ),
     latest_records AS (
