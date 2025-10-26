@@ -32,9 +32,10 @@ const entries = Object.entries(priceTable).filter(([modelName]) =>
 ### 2. `src/repository/model-price.ts`
 
 **修改点：**
-- 第 41 行：移除了 SQL 查询中的 `WHERE model_name ILIKE 'claude-%'` 条件
+- 移除了 SQL 查询中的 `WHERE model_name ILIKE 'claude-%'` 条件
+- 添加了对已使用模型的过滤，只查询在 `message_request` 表中实际使用过的模型
 - 修改前：只查询 `claude-` 开头的模型
-- 修改后：查询所有模型
+- 修改后：查询所有已在系统中使用过的模型（通过 JOIN message_request 表实现）
 
 **代码变更：**
 ```sql
@@ -49,7 +50,7 @@ WITH latest_prices AS (
 ),
 ...
 
--- 修改后
+-- 修改后（第一版）
 WITH latest_prices AS (
   SELECT
     model_name,
@@ -58,7 +59,29 @@ WITH latest_prices AS (
   GROUP BY model_name
 ),
 ...
+
+-- 修改后（最终版：仅显示已使用的模型）
+WITH used_models AS (
+  SELECT DISTINCT model
+  FROM message_request
+  WHERE model IS NOT NULL
+    AND deleted_at IS NULL
+),
+latest_prices AS (
+  SELECT
+    mp.model_name,
+    MAX(mp.created_at) as max_created_at
+  FROM model_prices mp
+  INNER JOIN used_models um ON mp.model_name = um.model
+  GROUP BY mp.model_name
+),
+...
 ```
+
+**优化说明：**
+- 添加了 `used_models` CTE（公共表表达式），从 `message_request` 表中获取所有已使用的模型名称
+- 在 `latest_prices` CTE 中通过 INNER JOIN 过滤，只保留已使用的模型
+- 这样价格表页面只会显示实际在系统中被使用过的模型，避免显示大量从未使用的模型
 
 ## 验证结果
 
@@ -83,13 +106,14 @@ WITH latest_prices AS (
 
 ### 受益功能
 1. **价格表上传**：现在可以上传包含所有供应商（如 OpenAI、Anthropic、Google 等）的模型价格
-2. **价格管理**：管理员可以查看和管理所有模型的价格
+2. **价格管理**：管理员可以查看和管理所有模型的价格（仅显示已使用的模型，避免信息过载）
 3. **成本计算**：代理请求可以准确计算各种模型的成本
+4. **界面优化**：价格表页面只显示实际使用过的模型，提供更清晰的视图
 
 ### 无影响功能
 1. **现有成本计算逻辑**：不受影响，仍然使用相同的计算方法
 2. **请求日志和统计**：不受影响
-3. **UI 界面**：不需要修改
+3. **UI 界面**：不需要修改（行为优化但 UI 保持不变）
 
 ## 使用说明
 
@@ -135,8 +159,9 @@ WITH latest_prices AS (
    - 验证系统正确识别为"更新"而不是"新增"
 
 3. **测试价格查询**
-   - 在价格表页面验证可以看到所有上传的模型
+   - 在价格表页面验证只显示已使用的模型
    - 验证不同供应商的模型都能正确显示
+   - 使用某个新模型后，刷新价格表页面应该能看到该模型的价格
 
 4. **测试成本计算**
    - 使用不同供应商的模型发起代理请求

@@ -28,17 +28,24 @@ export async function findLatestPriceByModel(modelName: string): Promise<ModelPr
 }
 
 /**
- * 获取所有模型的最新价格
+ * 获取所有模型的最新价格（仅包含已在系统中使用过的模型）
  * 注意：使用原生SQL，因为涉及到ROW_NUMBER()窗口函数
  */
 export async function findAllLatestPrices(): Promise<ModelPrice[]> {
   const query = sql`
-    WITH latest_prices AS (
+    WITH used_models AS (
+      SELECT DISTINCT model
+      FROM message_request
+      WHERE model IS NOT NULL
+        AND deleted_at IS NULL
+    ),
+    latest_prices AS (
       SELECT
-        model_name,
-        MAX(created_at) as max_created_at
-      FROM model_prices
-      GROUP BY model_name
+        mp.model_name,
+        MAX(mp.created_at) as max_created_at
+      FROM model_prices mp
+      INNER JOIN used_models um ON mp.model_name = um.model
+      GROUP BY mp.model_name
     ),
     latest_records AS (
       SELECT
